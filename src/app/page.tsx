@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
+import GoldenDragonApp from '@/components/customer/GoldenDragonApp'
 
 export default function HomePage() {
-  redirect('/login')
+  return <GoldenDragonApp />
 }
