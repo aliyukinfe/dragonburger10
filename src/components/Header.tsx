@@ -21,14 +21,22 @@ export function Header() {
     router.push('/login')
   }
   return (
-    <header className="card" style={{ position: 'sticky', top: 0, zIndex: 5 }}>
+    <header className="card" style={{ position: 'sticky', top: 0, zIndex: 5, backdropFilter: 'blur(8px)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 className="brand" style={{ margin: 0, fontSize: 34 }}>dragon burger -restaurant</h1>
+        <div>
+          <h1 className="brand" style={{ margin: 0, fontSize: 34 }}>dragon burger -restaurant</h1>
+          <small style={{ color: 'var(--text-muted)' }}>Modern restaurant command center</small>
+        </div>
         <button className="btn" onClick={logout}>Logout</button>
       </div>
       <nav style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
         {links.map((link) => (
-          <Link key={link.href} href={link.href} className="btn" style={{ opacity: pathname === link.href ? 1 : 0.75 }}>
+          <Link
+            key={link.href}
+            href={link.href}
+            className="btn"
+            style={{ opacity: pathname === link.href ? 1 : 0.72, transform: pathname === link.href ? 'translateY(-1px)' : 'none' }}
+          >
             {link.label}
           </Link>
         ))}

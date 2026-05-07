@@ -22,13 +22,26 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  background: var(--bg);
+  background: linear-gradient(180deg, #f7faf7 0%, #eef6f0 100%);
   color: var(--text);
   font-family: Inter, sans-serif;
 }
 .page-wrap { max-width: 1200px; margin: 0 auto; padding: 1rem; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1rem; }
 .brand { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.03em; }
-.btn { background: var(--green); color: #fff; border: 0; border-radius: 8px; padding: 0.6rem 1rem; cursor: pointer; }
-.btn:hover { background: var(--green-dark); }
+.btn { background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%); color: #fff; border: 0; border-radius: 10px; padding: 0.6rem 1rem; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.btn:hover { filter: brightness(0.95); }
 .grid { display: grid; gap: 0.75rem; }
+
+.stats-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 0.75rem; }
+.stat { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem; }
+.stat small { color: var(--text-muted); display: block; }
+.stat strong { font-size: 1.1rem; }
+.pill { display: inline-flex; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.pill.delivery { background: #eaf4fb; color: var(--blue); }
+.pill.payment { background: #fef5e6; color: #9a5c00; }
+
+.menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.6rem; }
+.menu-item { border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem; background: #fff; }
+.menu-item h4 { margin: 0 0 4px; font-size: 14px; }
+.menu-item p { margin: 0; color: var(--text-muted); font-size: 13px; }
