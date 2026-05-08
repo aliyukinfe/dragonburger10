@@ -12,6 +12,7 @@ Next.js + Supabase restaurant management system with:
 1. Copy `.env.example` to `.env.local`
 2. Fill:
    - `SUPABASE_SERVICE_ROLE_KEY` from Supabase dashboard
+   - `ANTHROPIC_API_KEY` from Anthropic dashboard (https://console.anthropic.com/)
 3. Run SQL from `supabase/schema.sql` in Supabase SQL editor
 4. Create one user in Supabase Auth
 5. Enable realtime replication for `orders`
