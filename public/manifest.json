@@ -1,0 +1,15 @@
+{
+  "name": "DragonBurger - 扫码点餐",
+  "short_name": "龙堡点餐",
+  "description": "Chinese QR restaurant ordering system for DragonBurger",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0505",
+  "theme_color": "#dc2626",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/globe.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "categories": ["food", "lifestyle"],
+  "lang": "zh-CN"
+}

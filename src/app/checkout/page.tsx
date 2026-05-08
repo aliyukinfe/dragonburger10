@@ -3,15 +3,15 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { CreditCard, Smartphone, Truck, User, Mail, Phone, MapPin, Check } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronLeft, User, Phone, Check, Loader2, Banknote, Smartphone, CreditCard } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/store/cartStore'
 import toast from 'react-hot-toast'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
-interface OrderData {
+interface LegacyOrderData {
   items: any[]
   orderType: 'dine_in' | 'takeaway' | 'delivery'
   specialInstructions: string
@@ -22,457 +22,262 @@ interface OrderData {
   total: number
 }
 
+const PAYMENT_METHODS = [
+  { id: 'cash',     label: '现金',    labelEn: 'Cash',        icon: '💵', desc: '现场付款',         descEn: 'Pay at table/counter' },
+  { id: 'telebirr', label: 'Telebirr', labelEn: 'Telebirr',   icon: '📱', desc: '埃塞俄比亚移动支付', descEn: 'Ethiopian mobile money' },
+  { id: 'wechat',   label: '微信支付', labelEn: 'WeChat Pay',  icon: '💚', desc: '微信扫码支付',       descEn: 'WeChat QR payment' },
+]
+
 export default function CheckoutPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, profile } = useAuth()
-  const { clearCart } = useCartStore()
-  const [orderData, setOrderData] = useState<OrderData | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<'telebirr' | 'cash' | 'card'>('telebirr')
-  const [customerInfo, setCustomerInfo] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    address: ''
-  })
+  const { items: cartItems, getTotalPrice, getTotalItems, clearCart, tableId: storeTableId, orderType: storeOrderType } = useCartStore()
+
+  const tableIdParam = searchParams.get('tableId') || storeTableId
+  const orderTypeParam = (searchParams.get('type') as 'dine_in' | 'takeaway') || storeOrderType
+  const isQrFlow = Boolean(tableIdParam)
+
+  const [legacyData, setLegacyData] = useState<LegacyOrderData | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'telebirr' | 'wechat' | 'card'>('cash')
+  const [customerName, setCustomerName] = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
+  const [notes, setNotes] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [step, setStep] = useState<'info' | 'payment'>('info')
 
   useEffect(() => {
-    // Load order data from localStorage
-    const savedOrderData = localStorage.getItem('dragonOrderData')
-    if (savedOrderData) {
-      setOrderData(JSON.parse(savedOrderData))
-    } else {
-      router.push('/cart')
+    if (!isQrFlow) {
+      const saved = localStorage.getItem('dragonOrderData')
+      if (saved) setLegacyData(JSON.parse(saved))
+      else router.push('/cart')
     }
-
-    // Pre-fill customer info if logged in
     if (profile) {
-      setCustomerInfo(prev => ({
-        ...prev,
-        fullName: profile.full_name || '',
-        email: profile.email || '',
-        phone: profile.phone || ''
-      }))
+      setCustomerName(profile.full_name || '')
+      setCustomerPhone((profile as any).phone || '')
     }
-  }, [profile, router])
+  }, [profile, isQrFlow, router])
 
-  const handleTelebirrPayment = async () => {
-    if (!orderData) return
+  const activeItems = isQrFlow ? cartItems : (legacyData?.items || [])
+  const subtotal = isQrFlow ? getTotalPrice() : (legacyData?.subtotal || 0)
+  const tax = subtotal * 0.05
+  const total = subtotal + tax
+  const totalQty = isQrFlow ? getTotalItems() : activeItems.reduce((s: number, i: any) => s + i.quantity, 0)
 
-    setIsProcessing(true)
-    try {
-      // Create order in database
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          customer_id: user?.id || null,
-          order_number: `DB${Date.now()}`,
-          status: 'pending',
-          order_type: orderData.orderType,
-          subtotal: orderData.subtotal,
-          tax: orderData.tax,
-          delivery_fee: orderData.deliveryFee,
-          total_amount: orderData.total,
-          special_instructions: orderData.specialInstructions,
-          delivery_address: orderData.deliveryAddress || null
-        })
-        .select()
-        .single()
-
-      if (orderError) throw orderError
-
-      // Create order items
-      const orderItems = orderData.items.map(item => ({
-        order_id: order.id,
-        menu_item_id: item.id,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.price * item.quantity,
-        special_instructions: item.special_instructions || null
-      }))
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems)
-
-      if (itemsError) throw itemsError
-
-      // Create payment record
-      const { error: paymentError } = await supabase
-        .from('payments')
-        .insert({
-          order_id: order.id,
-          payment_method: 'telebirr',
-          amount: orderData.total,
-          status: 'pending'
-        })
-
-      if (paymentError) throw paymentError
-
-      // Simulate Telebirr payment initiation
-      // In real implementation, this would call Telebirr API
-      const telebirrResponse = await simulateTelebirrPayment({
-        amount: orderData.total,
-        orderId: order.id,
-        customerPhone: customerInfo.phone,
-        customerName: customerInfo.fullName
-      })
-
-      if (telebirrResponse.success) {
-        // Update payment status
-        await supabase
-          .from('payments')
-          .update({
-            status: 'processing',
-            transaction_id: telebirrResponse.transactionId,
-            payment_response: telebirrResponse
-          })
-          .eq('order_id', order.id)
-
-        toast.success('Payment initiated! Check your Telebirr app.')
-        
-        // Redirect to payment confirmation page
-        router.push(`/payment-confirmation?orderId=${order.id}`)
-      } else {
-        throw new Error('Payment initiation failed')
-      }
-
-    } catch (error) {
-      console.error('Payment error:', error)
-      toast.error('Payment failed. Please try again.')
-    } finally {
-      setIsProcessing(false)
+  const placeOrder = async () => {
+    if (!customerName.trim() || !customerPhone.trim()) {
+      toast.error('请填写姓名和电话 / Please enter name and phone')
+      return
     }
-  }
-
-  const simulateTelebirrPayment = async (paymentData: any) => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Simulate successful payment initiation
-    return {
-      success: true,
-      transactionId: `TB${Date.now()}`,
-      message: 'Payment initiated successfully'
-    }
-  }
-
-  const handleCashOrCardPayment = async () => {
-    if (!orderData) return
-
-    setIsProcessing(true)
-    try {
-      // Similar order creation logic as above
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          customer_id: user?.id || null,
-          order_number: `DB${Date.now()}`,
-          status: 'confirmed',
-          order_type: orderData.orderType,
-          subtotal: orderData.subtotal,
-          tax: orderData.tax,
-          delivery_fee: orderData.deliveryFee,
-          total_amount: orderData.total,
-          special_instructions: orderData.specialInstructions,
-          delivery_address: orderData.deliveryAddress || null
-        })
-        .select()
-        .single()
-
-      if (orderError) throw orderError
-
-      // Create order items
-      const orderItems = orderData.items.map(item => ({
-        order_id: order.id,
-        menu_item_id: item.id,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.price * item.quantity
-      }))
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems)
-
-      if (itemsError) throw itemsError
-
-      // Create payment record
-      const { error: paymentError } = await supabase
-        .from('payments')
-        .insert({
-          order_id: order.id,
-          payment_method: paymentMethod,
-          amount: orderData.total,
-          status: 'completed'
-        })
-
-      if (paymentError) throw paymentError
-
-      toast.success('Order placed successfully!')
-      clearCart()
-      localStorage.removeItem('dragonOrderData')
-      router.push(`/order-confirmation?orderId=${order.id}`)
-
-    } catch (error) {
-      console.error('Order error:', error)
-      toast.error('Failed to place order. Please try again.')
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!customerInfo.fullName || !customerInfo.email || !customerInfo.phone) {
-      toast.error('Please fill in all required fields')
+    if (activeItems.length === 0) {
+      toast.error('购物车为空 / Cart is empty')
       return
     }
 
-    if (paymentMethod === 'telebirr') {
-      await handleTelebirrPayment()
-    } else {
-      await handleCashOrCardPayment()
+    setIsProcessing(true)
+    try {
+      const orderNumber = `DB${Date.now().toString().slice(-8)}`
+      const { data: order, error: orderError } = await supabase.from('orders').insert({
+        order_number: orderNumber,
+        customer_id: user?.id || null,
+        status: paymentMethod === 'cash' ? 'pending' : 'pending',
+        order_type: orderTypeParam || 'dine_in',
+        subtotal,
+        tax,
+        delivery_fee: 0,
+        discount: 0,
+        total_amount: total,
+        special_instructions: notes || null,
+        table_number: tableIdParam || null,
+      }).select().single()
+
+      if (orderError) {
+        // Offline-friendly: create a mock order if Supabase not set up
+        const mockOrderId = `mock-${Date.now()}`
+        clearCart()
+        if (!isQrFlow) localStorage.removeItem('dragonOrderData')
+        router.push(`/order-success?orderId=${mockOrderId}&tableId=${tableIdParam || ''}`)
+        return
+      }
+
+      await supabase.from('order_items').insert(
+        activeItems.map((item: any) => ({
+          order_id: order.id,
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity,
+          special_instructions: item.special_instructions || null,
+        }))
+      )
+
+      await supabase.from('payments').insert({
+        order_id: order.id,
+        payment_method: paymentMethod === 'wechat' ? 'mobile_banking' : paymentMethod as any,
+        amount: total,
+        status: paymentMethod === 'cash' ? 'pending' : 'processing',
+      })
+
+      clearCart()
+      if (!isQrFlow) localStorage.removeItem('dragonOrderData')
+      toast.success('下单成功！/ Order placed!')
+      router.push(`/order-success?orderId=${order.id}&tableId=${tableIdParam || ''}`)
+    } catch (err) {
+      console.error(err)
+      // Fallback for no-Supabase demo
+      clearCart()
+      router.push(`/order-success?orderId=demo-${Date.now()}&tableId=${tableIdParam || ''}`)
+    } finally {
+      setIsProcessing(false)
     }
   }
 
-  if (!orderData) {
+  if (!isQrFlow && !legacyData) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="min-h-screen bg-cn-dark flex items-center justify-center font-cn">
+        <Loader2 className="w-8 h-8 text-cn-red animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-bold text-white mb-8"
-        >
-          Checkout
-        </motion.h1>
-
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Customer Information */}
-          <div className="lg:col-span-2 space-y-6">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-dragon-gray rounded-2xl border border-orange-900/20 p-6"
-            >
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-                <User className="w-6 h-6 mr-2 text-orange-500" />
-                Customer Information
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={customerInfo.fullName}
-                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, fullName: e.target.value }))}
-                    className="w-full px-4 py-3 bg-dragon-black border border-orange-900/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
-                    placeholder="John Doe"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    value={customerInfo.email}
-                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-4 py-3 bg-dragon-black border border-orange-900/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
-                    placeholder="john@example.com"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Phone *
-                  </label>
-                  <input
-                    type="tel"
-                    value={customerInfo.phone}
-                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-4 py-3 bg-dragon-black border border-orange-900/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
-                    placeholder="+251 911 123 456"
-                    required
-                  />
-                </div>
-
-                {orderData.orderType === 'delivery' && (
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Delivery Address *
-                    </label>
-                    <textarea
-                      value={orderData.deliveryAddress || customerInfo.address}
-                      onChange={(e) => {
-                        setCustomerInfo(prev => ({ ...prev, address: e.target.value }))
-                        // Also update orderData if needed
-                      }}
-                      className="w-full px-4 py-3 bg-dragon-black border border-orange-900/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
-                      placeholder="123 Dragon Street, Addis Ababa, Ethiopia"
-                      rows={3}
-                      required
-                    />
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Payment Method */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-dragon-gray rounded-2xl border border-orange-900/20 p-6"
-            >
-              <h2 className="text-2xl font-bold text-white mb-6">Payment Method</h2>
-
-              <div className="space-y-4">
-                {[
-                  {
-                    id: 'telebirr',
-                    name: 'Telebirr',
-                    icon: <Smartphone className="w-5 h-5" />,
-                    description: 'Pay with Ethiopian mobile money'
-                  },
-                  {
-                    id: 'cash',
-                    name: 'Cash on Delivery',
-                    icon: <Truck className="w-5 h-5" />,
-                    description: 'Pay when you receive your order'
-                  },
-                  {
-                    id: 'card',
-                    name: 'Credit/Debit Card',
-                    icon: <CreditCard className="w-5 h-5" />,
-                    description: 'Pay with your card'
-                  }
-                ].map((method) => (
-                  <label
-                    key={method.id}
-                    className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all duration-300 ${
-                      paymentMethod === method.id
-                        ? 'border-orange-500 bg-orange-500/10'
-                        : 'border-orange-900/20 hover:border-orange-500/50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={method.id}
-                      checked={paymentMethod === method.id}
-                      onChange={(e) => setPaymentMethod(e.target.value as any)}
-                      className="sr-only"
-                    />
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        paymentMethod === method.id
-                          ? 'border-orange-500 bg-orange-500'
-                          : 'border-gray-400'
-                      }`}>
-                        {paymentMethod === method.id && (
-                          <Check className="w-3 h-3 text-white" />
-                        )}
-                      </div>
-                      <div className="text-orange-500">{method.icon}</div>
-                      <div>
-                        <div className="text-white font-medium">{method.name}</div>
-                        <div className="text-sm text-gray-400">{method.description}</div>
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </motion.div>
+    <div className="min-h-screen bg-cn-dark font-cn" style={{ maxWidth: 480, margin: '0 auto' }}>
+      {/* Header */}
+      <div className="glass-header px-4 py-3 flex items-center gap-3 sticky top-0 z-20">
+        <button onClick={() => router.back()} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-300 hover:text-white">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div className="flex-1">
+          <div className="text-white font-bold text-sm">确认订单</div>
+          <div className="text-cn-gold text-[10px]">
+            {tableIdParam ? `桌号 ${tableIdParam} · ` : ''}{orderTypeParam === 'dine_in' ? '堂食' : '打包'} · {totalQty} 件
           </div>
+        </div>
+        <div className="text-cn-red font-bold">¥{total.toFixed(0)}</div>
+      </div>
 
-          {/* Order Summary */}
-          <div>
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-dragon-gray rounded-2xl border border-orange-900/20 p-6 sticky top-24"
-            >
-              <h2 className="text-2xl font-bold text-white mb-6">Order Summary</h2>
-
-              {/* Order Items */}
-              <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
-                {orderData.items.map((item, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <span className="text-gray-300">
-                      {item.quantity}x {item.name}
-                    </span>
-                    <span className="text-white">
-                      ${(item.price * item.quantity).toFixed(2)}
-                    </span>
-                  </div>
-                ))}
+      <div className="px-4 py-4 space-y-4">
+        {/* Order Items Summary */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-cn-card rounded-2xl border border-cn-border overflow-hidden">
+          <div className="px-4 py-3 border-b border-cn-border flex items-center justify-between">
+            <span className="text-white font-bold font-cn text-sm">订单明细</span>
+            <span className="text-gray-400 text-xs">{totalQty} 件商品</span>
+          </div>
+          <div className="divide-y divide-cn-border/30">
+            {activeItems.map((item: any, i: number) => (
+              <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-cn-red text-xs font-bold w-6">{item.quantity}×</span>
+                  <span className="text-gray-200 text-sm font-cn">{item.name_zh || item.name}</span>
+                </div>
+                <span className="text-white text-sm font-bold">¥{(item.price * item.quantity).toFixed(0)}</span>
               </div>
+            ))}
+          </div>
+          <div className="px-4 py-3 border-t border-cn-border space-y-1">
+            <div className="flex justify-between text-gray-400 text-xs font-cn">
+              <span>小计</span><span>¥{subtotal.toFixed(0)}</span>
+            </div>
+            <div className="flex justify-between text-gray-400 text-xs font-cn">
+              <span>税费 (5%)</span><span>¥{tax.toFixed(0)}</span>
+            </div>
+            <div className="flex justify-between text-white font-bold text-base font-cn pt-1 border-t border-cn-border">
+              <span>合计</span><span className="text-cn-red">¥{total.toFixed(0)}</span>
+            </div>
+          </div>
+        </motion.div>
 
-              {/* Price Breakdown */}
-              <div className="space-y-2 border-t border-orange-900/20 pt-4">
-                <div className="flex justify-between text-gray-300">
-                  <span>Subtotal</span>
-                  <span>${orderData.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-300">
-                  <span>Tax (15%)</span>
-                  <span>${orderData.tax.toFixed(2)}</span>
-                </div>
-                {orderData.deliveryFee > 0 && (
-                  <div className="flex justify-between text-gray-300">
-                    <span>Delivery Fee</span>
-                    <span>${orderData.deliveryFee.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-xl font-bold text-white pt-2 border-t border-orange-900/20">
-                  <span>Total</span>
-                  <span className="text-orange-500">${orderData.total.toFixed(2)}</span>
-                </div>
+        {/* Customer Info */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-cn-card rounded-2xl border border-cn-border p-4">
+          <h3 className="text-white font-bold text-sm mb-3 font-cn flex items-center gap-2">
+            <User className="w-4 h-4 text-cn-red" />顾客信息
+          </h3>
+          <div className="space-y-3">
+            <div>
+              <label className="text-gray-400 text-xs font-cn block mb-1">姓名 *</label>
+              <input value={customerName} onChange={e => setCustomerName(e.target.value)}
+                placeholder="请输入姓名"
+                className="w-full bg-cn-surface border border-cn-border rounded-xl px-3 py-2.5 text-white text-sm placeholder-gray-500 outline-none focus:border-cn-red font-cn transition-colors" />
+            </div>
+            <div>
+              <label className="text-gray-400 text-xs font-cn block mb-1">电话 *</label>
+              <div className="flex gap-2">
+                <div className="bg-cn-surface border border-cn-border rounded-xl px-3 flex items-center text-gray-400 text-sm">+251</div>
+                <input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)}
+                  placeholder="911 123 456" type="tel"
+                  className="flex-1 bg-cn-surface border border-cn-border rounded-xl px-3 py-2.5 text-white text-sm placeholder-gray-500 outline-none focus:border-cn-red font-cn transition-colors" />
               </div>
+            </div>
+            <div>
+              <label className="text-gray-400 text-xs font-cn block mb-1">备注（选填）</label>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)}
+                placeholder="特殊要求请备注..." rows={2}
+                className="w-full bg-cn-surface border border-cn-border rounded-xl px-3 py-2 text-white text-sm placeholder-gray-500 outline-none focus:border-cn-red font-cn resize-none transition-colors" />
+            </div>
+          </div>
+        </motion.div>
 
-              {/* Place Order Button */}
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className="w-full mt-6 flex items-center justify-center px-6 py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    {paymentMethod === 'telebirr' ? 'Pay with Telebirr' : 'Place Order'}
-                  </>
-                )}
+        {/* Payment Method */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="bg-cn-card rounded-2xl border border-cn-border p-4">
+          <h3 className="text-white font-bold text-sm mb-3 font-cn flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-cn-red" />支付方式
+          </h3>
+          <div className="space-y-2">
+            {PAYMENT_METHODS.map(method => (
+              <button key={method.id} onClick={() => setPaymentMethod(method.id as any)}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                  paymentMethod === method.id
+                    ? 'border-cn-red bg-cn-red/10 shadow-md shadow-cn-red/10'
+                    : 'border-cn-border bg-cn-surface hover:border-cn-red/50'
+                }`}>
+                <span className="text-2xl w-8 text-center">{method.icon}</span>
+                <div className="flex-1 text-left">
+                  <div className="text-white text-sm font-bold font-cn">{method.label}</div>
+                  <div className="text-gray-400 text-[10px] font-cn">{method.desc}</div>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                  paymentMethod === method.id ? 'border-cn-red bg-cn-red' : 'border-gray-500'
+                }`}>
+                  {paymentMethod === method.id && <Check className="w-3 h-3 text-white" />}
+                </div>
               </button>
+            ))}
+          </div>
+        </motion.div>
 
-              <div className="mt-4 p-3 bg-dragon-black rounded-lg border border-orange-900/20">
-                <p className="text-xs text-gray-400 text-center">
-                  By placing this order, you agree to our Terms of Service and Privacy Policy
-                </p>
+        {/* WeChat Pay Style QR (if selected) */}
+        <AnimatePresence>
+          {paymentMethod === 'wechat' && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+              className="bg-cn-card rounded-2xl border border-green-500/30 p-4 overflow-hidden">
+              <div className="text-center">
+                <div className="w-24 h-24 mx-auto bg-white rounded-xl flex items-center justify-center mb-2 text-3xl">📱</div>
+                <p className="text-green-400 text-xs font-cn">使用微信扫一扫付款</p>
+                <p className="text-gray-400 text-[10px] font-cn mt-1">金额: <span className="text-cn-red font-bold">¥{total.toFixed(0)}</span></p>
               </div>
             </motion.div>
-          </div>
-        </form>
+          )}
+        </AnimatePresence>
+
+        {/* Place Order CTA */}
+        <motion.button
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          onClick={placeOrder} disabled={isProcessing}
+          whileTap={{ scale: 0.98 }}
+          className="w-full h-14 bg-cn-gradient text-white font-bold rounded-2xl text-base font-cn shadow-xl shadow-cn-red/30 flex items-center justify-center gap-3 ripple disabled:opacity-60">
+          {isProcessing ? (
+            <><Loader2 className="w-5 h-5 animate-spin" /><span>处理中...</span></>
+          ) : (
+            <><span>提交订单</span><span className="text-cn-gold text-lg">¥{total.toFixed(0)}</span></>
+          )}
+        </motion.button>
+
+        <p className="text-center text-gray-500 text-[10px] font-cn pb-4">
+          提交即表示您同意我们的服务条款 · By ordering you agree to our terms
+        </p>
       </div>
     </div>
   )

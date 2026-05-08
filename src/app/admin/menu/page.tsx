@@ -37,14 +37,19 @@ export default function MenuManagement() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [formData, setFormData] = useState({
     name: '',
+    name_zh: '',
     description: '',
     price: '',
     category_id: '',
     ingredients: [] as string[],
     allergens: [] as string[],
     is_spicy: false,
+    spice_level: 0,
     is_vegetarian: false,
     is_available: true,
+    is_popular: false,
+    is_new: false,
+    is_recommended: false,
     preparation_time: 15,
     sort_order: 0
   })
@@ -167,14 +172,19 @@ export default function MenuManagement() {
   const resetForm = () => {
     setFormData({
       name: '',
+      name_zh: '',
       description: '',
       price: '',
       category_id: '',
       ingredients: [],
       allergens: [],
       is_spicy: false,
+      spice_level: 0,
       is_vegetarian: false,
       is_available: true,
+      is_popular: false,
+      is_new: false,
+      is_recommended: false,
       preparation_time: 15,
       sort_order: 0
     })
@@ -184,14 +194,19 @@ export default function MenuManagement() {
     setEditingItem(item)
     setFormData({
       name: item.name,
+      name_zh: (item as any).name_zh || '',
       description: item.description || '',
       price: item.price.toString(),
       category_id: item.category_id,
       ingredients: item.ingredients || [],
       allergens: item.allergens || [],
       is_spicy: item.is_spicy,
+      spice_level: (item as any).spice_level || 0,
       is_vegetarian: item.is_vegetarian,
       is_available: item.is_available,
+      is_popular: (item as any).is_popular || false,
+      is_new: (item as any).is_new || false,
+      is_recommended: (item as any).is_recommended || false,
       preparation_time: item.preparation_time,
       sort_order: item.sort_order
     })
@@ -379,7 +394,7 @@ export default function MenuManagement() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Name *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Name (EN) *</label>
                 <input
                   type="text"
                   name="name"
@@ -388,6 +403,19 @@ export default function MenuManagement() {
                   className="w-full px-4 py-3 bg-dragon-black border border-orange-900/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
                   placeholder="Dragon Burger"
                   required
+                />
+              </div>
+
+              {/* Chinese Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">中文名 (ZH)</label>
+                <input
+                  type="text"
+                  name="name_zh"
+                  value={formData.name_zh}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-dragon-black border border-orange-900/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                  placeholder="龙堡"
                 />
               </div>
 
@@ -517,6 +545,24 @@ export default function MenuManagement() {
                     className="w-4 h-4 text-orange-500 bg-dragon-black border-orange-900/20 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-gray-300">Available</span>
+                </label>
+
+                <label className="flex items-center space-x-2">
+                  <input type="checkbox" name="is_popular" checked={formData.is_popular} onChange={handleInputChange}
+                    className="w-4 h-4 text-red-500 bg-dragon-black border-orange-900/20 rounded focus:ring-red-500 focus:ring-2" />
+                  <span className="text-gray-300">🔥 热销 Popular</span>
+                </label>
+
+                <label className="flex items-center space-x-2">
+                  <input type="checkbox" name="is_new" checked={formData.is_new} onChange={handleInputChange}
+                    className="w-4 h-4 text-yellow-500 bg-dragon-black border-orange-900/20 rounded focus:ring-yellow-500 focus:ring-2" />
+                  <span className="text-gray-300">✨ 新品 New</span>
+                </label>
+
+                <label className="flex items-center space-x-2">
+                  <input type="checkbox" name="is_recommended" checked={formData.is_recommended} onChange={handleInputChange}
+                    className="w-4 h-4 text-yellow-500 bg-dragon-black border-orange-900/20 rounded focus:ring-yellow-500 focus:ring-2" />
+                  <span className="text-gray-300">⭐ 推荐 Recommended</span>
                 </label>
               </div>
             </div>

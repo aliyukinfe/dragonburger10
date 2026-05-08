@@ -40,17 +40,23 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/menu"
-                className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105"
+                href="/order/1"
+                className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-red-600 to-red-800 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-900 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-red-900/40"
               >
-                Order Now
+                🐉 扫码点餐 / QR Order
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
               <Link
-                href="/about"
+                href="/menu"
                 className="inline-flex items-center justify-center px-8 py-4 border border-orange-500 text-orange-500 font-semibold rounded-lg hover:bg-orange-500 hover:text-white transition-all duration-300"
               >
-                Learn More
+                Browse Menu
+              </Link>
+              <Link
+                href="/admin"
+                className="inline-flex items-center justify-center px-8 py-4 border border-yellow-600/50 text-yellow-500 font-semibold rounded-lg hover:bg-yellow-600/20 hover:text-yellow-300 transition-all duration-300"
+              >
+                Admin Dashboard
               </Link>
             </div>
           </motion.div>
@@ -75,6 +81,52 @@ export default function HomePage() {
               <div className="text-gray-400">Customer Rating</div>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* QR Ordering Showcase */}
+      <section className="py-16 bg-gradient-to-b from-black to-[#0d0505]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}
+            className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-red-900/20 border border-red-700/30 rounded-full px-4 py-1.5 text-red-400 text-sm mb-4">
+              <span>🐉</span> 扫码点餐系统 · QR Table Ordering
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Scan · Order · Enjoy
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 mt-1">
+                扫码 · 点餐 · 享用
+              </span>
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto">
+              Real-time WeChat-style table ordering. Scan QR, pick your items, pay — no app download needed.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            {[
+              { icon: '📱', step: '01', title: 'Scan QR', zh: '扫描二维码', desc: 'Customer scans table QR code with any phone camera' },
+              { icon: '🛒', step: '02', title: 'Order', zh: '浏览点餐', desc: 'Browse full menu with categories, add items, choose spice level' },
+              { icon: '✅', step: '03', title: 'Track', zh: '实时跟踪', desc: 'Real-time order status from kitchen to table' },
+            ].map((s, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.15 }} viewport={{ once: true }}
+                className="bg-[#1a0808] border border-red-900/20 rounded-2xl p-6 text-center hover:border-red-600/40 transition-all">
+                <div className="text-4xl mb-3">{s.icon}</div>
+                <div className="text-red-500 text-xs font-bold mb-1">{s.step}</div>
+                <div className="text-white font-bold text-lg">{s.title}</div>
+                <div className="text-yellow-500 text-sm font-bold mb-2">{s.zh}</div>
+                <p className="text-gray-400 text-sm">{s.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link href="/order/1"
+              className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-red-600 to-red-800 text-white font-bold rounded-xl shadow-xl shadow-red-900/40 hover:shadow-red-600/40 transition-all hover:scale-105">
+              🐉 Try Demo Table 1 · 体验桌位1
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       </section>
 

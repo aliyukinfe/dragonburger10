@@ -14,11 +14,15 @@ import {
   LogOut,
   TrendingUp,
   FileText,
-  Truck
+  Truck,
+  QrCode,
+  ChefHat,
+  Utensils
 } from 'lucide-react'
 
 const adminNavItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/tables', label: 'Tables & QR', icon: QrCode },
   { href: '/admin/menu', label: 'Menu Management', icon: Package },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/customers', label: 'Customers', icon: Users },
@@ -26,6 +30,8 @@ const adminNavItems = [
   { href: '/admin/drivers', label: 'Delivery Drivers', icon: Truck },
   { href: '/admin/inventory', label: 'Inventory', icon: FileText },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/kitchen', label: 'Kitchen Display', icon: ChefHat },
+  { href: '/waiter', label: 'Waiter Dashboard', icon: Utensils },
 ]
 
 export default function AdminLayout({

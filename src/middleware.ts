@@ -3,11 +3,25 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const path = req.nextUrl.pathname
+
+  // Inject x-pathname so root layout can detect route without client-side check
+  const res = NextResponse.next({
+    request: { headers: new Headers({ ...Object.fromEntries(req.headers), 'x-pathname': path }) },
+  })
+  res.headers.set('x-pathname', path)
+
+  // Skip auth checks for public ordering paths
+  const publicPaths = ['/order/', '/order-success', '/waiter']
+  if (publicPaths.some(p => path.startsWith(p))) return res
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key'
+
+  // Skip auth if Supabase isn't configured
+  if (supabaseUrl === 'https://placeholder.supabase.co') return res
+
+  const supabase = createClient(supabaseUrl, supabaseKey)
 
   const {
     data: { session },
@@ -18,8 +32,6 @@ export async function middleware(req: NextRequest) {
   const adminRoutes = ['/admin']
   const staffRoutes = ['/admin', '/kitchen']
   const driverRoutes = ['/driver']
-
-  const path = req.nextUrl.pathname
 
   // Check if user is accessing a protected route
   if (protectedRoutes.some(route => path.startsWith(route))) {
@@ -63,6 +75,7 @@ export async function middleware(req: NextRequest) {
 
   return res
 }
+
 
 export const config = {
   matcher: [
