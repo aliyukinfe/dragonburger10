@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { generateRestaurantInsight, analyzeOrderData } from '@/lib/claude';
 
 interface ClaudeAssistantProps {
   orderData?: any;
@@ -21,8 +20,14 @@ export default function ClaudeAssistant({ orderData }: ClaudeAssistantProps) {
     setResponse('');
 
     try {
-      const insight = await generateRestaurantInsight(prompt);
-      setResponse(insight);
+      const res = await fetch('/api/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'insight', prompt }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      setResponse(data.content);
     } catch (err) {
       setError('Failed to generate insight. Please check your API key and try again.');
       console.error(err);
@@ -39,8 +44,14 @@ export default function ClaudeAssistant({ orderData }: ClaudeAssistantProps) {
     setResponse('');
 
     try {
-      const analysis = await analyzeOrderData(orderData);
-      setResponse(analysis);
+      const res = await fetch('/api/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'analyze', orderData }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      setResponse(data.content);
     } catch (err) {
       setError('Failed to analyze order data. Please check your API key and try again.');
       console.error(err);

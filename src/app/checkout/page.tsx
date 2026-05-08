@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { CreditCard, Smartphone, Truck, User, Mail, Phone, MapPin, Check } from 'lucide-react'

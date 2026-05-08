@@ -1,3 +1,7 @@
+'use client'
+
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { ArrowRight, Star, Clock, MapPin } from 'lucide-react'
 import { motion } from 'framer-motion'

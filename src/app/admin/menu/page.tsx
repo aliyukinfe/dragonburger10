@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -16,13 +18,14 @@ import {
 import { Database } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
-interface MenuItem extends Database['public']['Tables']['menu_items']['Row'] {
+type MenuItemRow = Database['public']['Tables']['menu_items']['Row']
+type MenuItem = MenuItemRow & {
   categories: {
     name: string
   }
 }
 
-interface Category extends Database['public']['Tables']['categories']['Row'] {}
+type Category = Database['public']['Tables']['categories']['Row']
 
 export default function MenuManagement() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
@@ -194,7 +197,7 @@ export default function MenuManagement() {
     })
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
     setFormData(prev => ({
       ...prev,
