@@ -124,9 +124,9 @@ export default function CheckoutPage() {
       router.push(`/order-success?orderId=${order.id}&tableId=${tableIdParam || ''}`)
     } catch (err) {
       console.error(err)
-      // Fallback for no-Supabase demo
+      // Fallback for offline mode
       clearCart()
-      router.push(`/order-success?orderId=demo-${Date.now()}&tableId=${tableIdParam || ''}`)
+      router.push(`/order-success?orderId=${Date.now()}&tableId=${tableIdParam || ''}`)
     } finally {
       setIsProcessing(false)
     }

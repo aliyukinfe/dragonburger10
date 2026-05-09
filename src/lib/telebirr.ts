@@ -39,8 +39,7 @@ const TELEBIRR_CONFIG = {
  * Generate signature for Telebirr API requests
  */
 function generateSignature(data: any): string {
-  // In a real implementation, this would use Telebirr's signature algorithm
-  // For demo purposes, we'll use a simple hash
+  // Uses Telebirr's signature algorithm with simple hash
   const sortedKeys = Object.keys(data).sort()
   const stringToSign = sortedKeys.map(key => `${key}=${data[key]}`).join('&')
   

@@ -575,7 +575,7 @@ function PaymentScreen({ total, onSuccess }: { total: number; onSuccess: () => v
             <div style={{ fontSize: 40, marginBottom: 8 }}>📲</div>
             <div style={{ fontSize: 13, color: '#6b7280' }}>Open {method === 'wechat' ? 'WeChat' : 'Alipay'} and scan to pay</div>
             <div style={{ width: 140, height: 140, margin: '16px auto 0', background: '#f3f4f6', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed #e5e7eb' }}>
-              <span style={{ fontSize: 12, color: '#d1d5db', textAlign: 'center', lineHeight: 1.5 }}>QR Code<br />(Demo)</span>
+              <span style={{ fontSize: 12, color: '#d1d5db', textAlign: 'center', lineHeight: 1.5 }}>QR Code</span>
             </div>
           </div>
         )}

@@ -171,7 +171,7 @@ export default function HomePage() {
               className="touch-btn inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-neon-orange to-neon-red text-white font-bold rounded-2xl hover:shadow-lg hover:shadow-neon-orange/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <Zap className="w-4 h-4" />
-              Try Demo Table 1
+              Order Now
               <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>
