@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { ShoppingCart, Menu, X, User, LogOut, Settings } from 'lucide-react'
 import { useCartStore, CartItem } from '@/store/cartStore'
@@ -27,46 +28,49 @@ export default function Navbar() {
   }
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-      isScrolled 
-        ? 'bg-black/90 backdrop-blur-md border-b border-orange-900/20' 
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+      isScrolled
+        ? 'glass border-b border-neon-cyan/10'
         : 'bg-transparent'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform">
-              <span className="text-white font-bold text-xl">D</span>
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-neon-orange to-neon-red rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg shadow-neon-orange/20">
+              <span className="text-white font-bold text-lg sm:text-xl">D</span>
             </div>
-            <span className="text-white font-bold text-xl group-hover:text-orange-500 transition-colors">
+            <span className="text-white font-bold text-lg sm:text-xl group-hover:text-neon-cyan transition-colors">
               DragonBurger
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-gray-300 hover:text-orange-500 transition-colors">
-              Home
-            </Link>
-            <Link href="/menu" className="text-gray-300 hover:text-orange-500 transition-colors">
-              Menu
-            </Link>
-            <Link href="/about" className="text-gray-300 hover:text-orange-500 transition-colors">
-              About
-            </Link>
-            <Link href="/contact" className="text-gray-300 hover:text-orange-500 transition-colors">
-              Contact
-            </Link>
+          <div className="hidden md:flex items-center space-x-1">
+            {[
+              { href: '/', label: 'Home' },
+              { href: '/menu', label: 'Menu' },
+              { href: '/about', label: 'About' },
+              { href: '/contact', label: 'Contact' },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="relative px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors group"
+              >
+                {link.label}
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-neon-cyan group-hover:w-1/2 transition-all duration-300 rounded-full" />
+              </Link>
+            ))}
           </div>
 
           {/* Right side actions */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3">
             {/* Cart */}
-            <Link href="/cart" className="relative p-2 text-gray-300 hover:text-orange-500 transition-colors">
-              <ShoppingCart className="w-6 h-6" />
+            <Link href="/cart" className="relative p-2.5 text-gray-300 hover:text-neon-cyan transition-colors rounded-xl hover:bg-neon-cyan/5">
+              <ShoppingCart className="w-5 h-5" />
               {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 bg-gradient-to-r from-neon-orange to-neon-red text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center animate-bounce-in">
                   {cartItemCount}
                 </span>
               )}
@@ -75,31 +79,31 @@ export default function Navbar() {
             {/* User menu */}
             {user ? (
               <div className="relative group">
-                <button className="flex items-center space-x-2 text-gray-300 hover:text-orange-500 transition-colors">
-                  <User className="w-5 h-5" />
+                <button className="flex items-center space-x-2 px-3 py-2 text-gray-300 hover:text-neon-cyan transition-colors rounded-xl hover:bg-neon-cyan/5">
+                  <User className="w-4 h-4" />
                   <span className="text-sm">{profile?.full_name || 'User'}</span>
                 </button>
-                
-                <div className="absolute right-0 mt-2 w-48 bg-dragon-gray border border-orange-900/20 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                  <Link href="/profile" className="flex items-center space-x-2 px-4 py-3 text-gray-300 hover:bg-dragon-light hover:text-orange-500 transition-colors">
+
+                <div className="absolute right-0 mt-2 w-52 glass rounded-xl shadow-2xl shadow-black/50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-neon-cyan/10 overflow-hidden">
+                  <Link href="/profile" className="flex items-center space-x-2 px-4 py-3 text-gray-300 hover:bg-neon-cyan/5 hover:text-neon-cyan transition-colors text-sm">
                     <Settings className="w-4 h-4" />
                     <span>Profile</span>
                   </Link>
                   {profile?.role === 'admin' && (
-                    <Link href="/admin" className="flex items-center space-x-2 px-4 py-3 text-gray-300 hover:bg-dragon-light hover:text-orange-500 transition-colors">
+                    <Link href="/admin" className="flex items-center space-x-2 px-4 py-3 text-gray-300 hover:bg-neon-cyan/5 hover:text-neon-cyan transition-colors text-sm">
                       <Settings className="w-4 h-4" />
                       <span>Admin</span>
                     </Link>
                   )}
                   {profile?.role === 'staff' && (
-                    <Link href="/kitchen" className="flex items-center space-x-2 px-4 py-3 text-gray-300 hover:bg-dragon-light hover:text-orange-500 transition-colors">
+                    <Link href="/kitchen" className="flex items-center space-x-2 px-4 py-3 text-gray-300 hover:bg-neon-cyan/5 hover:text-neon-cyan transition-colors text-sm">
                       <Settings className="w-4 h-4" />
                       <span>Kitchen</span>
                     </Link>
                   )}
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center space-x-2 px-4 py-3 text-gray-300 hover:bg-dragon-light hover:text-red-500 transition-colors w-full text-left"
+                    className="flex items-center space-x-2 px-4 py-3 text-gray-300 hover:bg-neon-cyan/5 hover:text-neon-red transition-colors w-full text-left text-sm"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Sign Out</span>
@@ -107,7 +111,7 @@ export default function Navbar() {
                 </div>
               </div>
             ) : (
-              <Link href="/auth/login" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors">
+              <Link href="/auth/login" className="px-4 py-2 bg-gradient-to-r from-neon-orange to-neon-red text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-neon-orange/30 transition-all">
                 Sign In
               </Link>
             )}
@@ -115,63 +119,69 @@ export default function Navbar() {
 
           {/* Mobile menu button */}
           <button
-            className="md:hidden text-gray-300 hover:text-orange-500 transition-colors"
+            className="md:hidden p-2 text-gray-300 hover:text-neon-cyan transition-colors rounded-xl hover:bg-neon-cyan/5"
             onClick={() => setIsOpen(!isOpen)}
           >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
 
         {/* Mobile Navigation */}
-        {isOpen && (
-          <div className="md:hidden bg-dragon-gray border-t border-orange-900/20">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link href="/" className="block px-3 py-2 text-gray-300 hover:text-orange-500 hover:bg-dragon-light rounded-lg transition-colors">
-                Home
+        <motion.div
+          initial={false}
+          animate={{ height: isOpen ? 'auto' : 0, opacity: isOpen ? 1 : 0 }}
+          transition={{ duration: 0.3 }}
+          className="md:hidden overflow-hidden"
+        >
+          <div className="glass rounded-2xl mt-2 mb-2 p-2 border border-neon-cyan/10">
+            {[
+              { href: '/', label: 'Home' },
+              { href: '/menu', label: 'Menu' },
+              { href: '/about', label: 'About' },
+              { href: '/contact', label: 'Contact' },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                className="block px-4 py-3 text-gray-300 hover:text-neon-cyan hover:bg-neon-cyan/5 rounded-xl transition-colors text-sm"
+              >
+                {link.label}
               </Link>
-              <Link href="/menu" className="block px-3 py-2 text-gray-300 hover:text-orange-500 hover:bg-dragon-light rounded-lg transition-colors">
-                Menu
-              </Link>
-              <Link href="/about" className="block px-3 py-2 text-gray-300 hover:text-orange-500 hover:bg-dragon-light rounded-lg transition-colors">
-                About
-              </Link>
-              <Link href="/contact" className="block px-3 py-2 text-gray-300 hover:text-orange-500 hover:bg-dragon-light rounded-lg transition-colors">
-                Contact
-              </Link>
-              <Link href="/cart" className="block px-3 py-2 text-gray-300 hover:text-orange-500 hover:bg-dragon-light rounded-lg transition-colors">
-                Cart ({cartItemCount})
-              </Link>
-              
-              {user ? (
-                <>
-                  <Link href="/profile" className="block px-3 py-2 text-gray-300 hover:text-orange-500 hover:bg-dragon-light rounded-lg transition-colors">
-                    Profile
-                  </Link>
-                  {profile?.role === 'admin' && (
-                    <Link href="/admin" className="block px-3 py-2 text-gray-300 hover:text-orange-500 hover:bg-dragon-light rounded-lg transition-colors">
-                      Admin
-                    </Link>
-                  )}
-                  {profile?.role === 'staff' && (
-                    <Link href="/kitchen" className="block px-3 py-2 text-gray-300 hover:text-orange-500 hover:bg-dragon-light rounded-lg transition-colors">
-                      Kitchen
-                    </Link>
-                  )}
-                  <button
-                    onClick={handleSignOut}
-                    className="block w-full text-left px-3 py-2 text-gray-300 hover:text-red-500 hover:bg-dragon-light rounded-lg transition-colors"
-                  >
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <Link href="/auth/login" className="block px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-center">
-                  Sign In
+            ))}
+            <Link href="/cart" onClick={() => setIsOpen(false)} className="block px-4 py-3 text-gray-300 hover:text-neon-cyan hover:bg-neon-cyan/5 rounded-xl transition-colors text-sm">
+              Cart {cartItemCount > 0 && <span className="ml-1 text-neon-orange font-bold">({cartItemCount})</span>}
+            </Link>
+
+            {user ? (
+              <>
+                <Link href="/profile" onClick={() => setIsOpen(false)} className="block px-4 py-3 text-gray-300 hover:text-neon-cyan hover:bg-neon-cyan/5 rounded-xl transition-colors text-sm">
+                  Profile
                 </Link>
-              )}
-            </div>
+                {profile?.role === 'admin' && (
+                  <Link href="/admin" onClick={() => setIsOpen(false)} className="block px-4 py-3 text-gray-300 hover:text-neon-cyan hover:bg-neon-cyan/5 rounded-xl transition-colors text-sm">
+                    Admin
+                  </Link>
+                )}
+                {profile?.role === 'staff' && (
+                  <Link href="/kitchen" onClick={() => setIsOpen(false)} className="block px-4 py-3 text-gray-300 hover:text-neon-cyan hover:bg-neon-cyan/5 rounded-xl transition-colors text-sm">
+                    Kitchen
+                  </Link>
+                )}
+                <button
+                  onClick={() => { handleSignOut(); setIsOpen(false); }}
+                  className="block w-full text-left px-4 py-3 text-gray-300 hover:text-neon-red hover:bg-neon-red/5 rounded-xl transition-colors text-sm"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link href="/auth/login" onClick={() => setIsOpen(false)} className="block px-4 py-3 bg-gradient-to-r from-neon-orange to-neon-red text-white rounded-xl text-center text-sm font-semibold mt-1">
+                Sign In
+              </Link>
+            )}
           </div>
-        )}
+        </motion.div>
       </div>
     </nav>
   )
